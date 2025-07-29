@@ -94,4 +94,27 @@ The application is configured for deployment with the following approach:
 - `npm run start`: Production server
 - `npm run db:push`: Push database schema changes
 
-The application expects a PostgreSQL database connection and can sync bond data from the Moment API on startup. The interface provides a comprehensive bond trading experience with real-time updates, portfolio management, and order execution capabilities.
+## Recent Changes
+
+### July 29, 2025 - API Integration and Data Loading
+- **Fixed Select component errors**: Resolved crash issues by replacing empty string values with "all" values
+- **Added sample bond data**: Loaded 5 major corporate bonds (Apple, Microsoft, Alphabet, JPMorgan, Bank of America) for development
+- **API endpoint investigation**: Current Moment API endpoints returning 404 errors - need correct endpoint documentation
+- **Functional bond screener**: All filtering, search, and UI functionality now working with sample data
+- **Server startup optimization**: Automatic bond data loading on application startup
+
+### API Status
+- **Moment API Base URL**: https://paper.moment-api.com (confirmed working)
+- **Authentication**: Bearer token authentication working
+- **Issue**: All tested endpoints (/v1/data/instrument/, /v1/data/instruments/, etc.) return 404 Not Found
+- **Current solution**: Using representative sample data while investigating correct API endpoints
+
+### Current Functionality
+- Bond screener with advanced filtering (type, rating, sector, yield, maturity)
+- Real-time WebSocket connections established
+- Portfolio management interface ready
+- Order management system ready
+- Market data center with order book visualization
+- Portfolio analytics with risk metrics
+
+The application is fully functional for demonstration purposes and ready to connect to live Moment API data once correct endpoints are identified. The interface provides a comprehensive bond trading experience with real-time updates, portfolio management, and order execution capabilities.
