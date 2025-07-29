@@ -97,8 +97,13 @@ export class MomentApiService {
     }
 
     const endpoint = `/v1/data/instrument/?${searchParams.toString()}`;
-    const response = await this.makeRequest<{ instruments: MomentBond[] }>(endpoint);
-    return response.instruments || [];
+    try {
+      const response = await this.makeRequest<MomentBond[]>(endpoint);
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      // Try bulk download as fallback
+      return this.bulkDownload();
+    }
   }
 
   async getInstrument(instrumentId: string): Promise<MomentBond> {
@@ -108,8 +113,13 @@ export class MomentApiService {
 
   async bulkDownload(): Promise<MomentBond[]> {
     const endpoint = '/v1/data/instrument/bulk-download/';
-    const response = await this.makeRequest<{ instruments: MomentBond[] }>(endpoint);
-    return response.instruments || [];
+    try {
+      const response = await this.makeRequest<MomentBond[]>(endpoint);
+      return Array.isArray(response) ? response : [];
+    } catch (error) {
+      console.error('Bulk download failed:', error);
+      return [];
+    }
   }
 
   // Market Data Methods

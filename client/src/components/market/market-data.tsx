@@ -22,7 +22,7 @@ export function MarketData() {
   const [marketDataUpdates, setMarketDataUpdates] = useState<{ [key: string]: any }>({});
 
   const { data: bonds = [] } = useBonds();
-  const { data: quote, refetch: refetchQuote } = useBondQuote(selectedBond);
+  const { data: quote = {}, refetch: refetchQuote } = useBondQuote(selectedBond);
 
   // WebSocket for real-time updates
   const { isConnected, lastMessage, subscribeToQuotes } = useWebSocket({
@@ -38,11 +38,11 @@ export function MarketData() {
 
   // Subscribe to quotes for all bonds when connected
   useEffect(() => {
-    if (isConnected && bonds.length > 0) {
-      const bondIds = bonds.slice(0, 10).map(bond => bond.id); // Limit to prevent spam
+    if (isConnected && Array.isArray(bonds) && bonds.length > 0) {
+      const bondIds = bonds.slice(0, 10).map((bond: any) => bond.id); // Limit to prevent spam
       subscribeToQuotes(bondIds);
     }
-  }, [isConnected, bonds.length]);
+  }, [isConnected, bonds]);
 
   // Mock market movers data
   const marketMovers = [
@@ -132,7 +132,7 @@ export function MarketData() {
                     <SelectValue placeholder="Select Bond" />
                   </SelectTrigger>
                   <SelectContent>
-                    {bonds.slice(0, 10).map(bond => (
+                    {Array.isArray(bonds) && bonds.slice(0, 10).map((bond: any) => (
                       <SelectItem key={bond.id} value={bond.id}>
                         {bond.issuer} {bond.coupon ? `${parseFloat(bond.coupon).toFixed(2)}%` : ''}
                       </SelectItem>
@@ -163,21 +163,21 @@ export function MarketData() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="font-mono text-cyber-green">
-                          {quote.bid_price?.toFixed(2) || 'N/A'}
+                          {(quote as any)?.bid_price?.toFixed(2) || 'N/A'}
                         </span>
                         <span className="font-mono text-gray-300">
-                          {quote.bid_size ? `${(quote.bid_size / 1000).toFixed(0)}K` : 'N/A'}
+                          {(quote as any)?.bid_size ? `${((quote as any).bid_size / 1000).toFixed(0)}K` : 'N/A'}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm opacity-75">
                         <span className="font-mono text-cyber-green">
-                          {quote.bid_price ? (quote.bid_price - 0.02).toFixed(2) : 'N/A'}
+                          {(quote as any)?.bid_price ? ((quote as any).bid_price - 0.02).toFixed(2) : 'N/A'}
                         </span>
                         <span className="font-mono text-gray-300">500K</span>
                       </div>
                       <div className="flex justify-between text-sm opacity-50">
                         <span className="font-mono text-cyber-green">
-                          {quote.bid_price ? (quote.bid_price - 0.04).toFixed(2) : 'N/A'}
+                          {(quote as any)?.bid_price ? ((quote as any).bid_price - 0.04).toFixed(2) : 'N/A'}
                         </span>
                         <span className="font-mono text-gray-300">1M</span>
                       </div>
@@ -193,21 +193,21 @@ export function MarketData() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="font-mono text-cyber-red">
-                          {quote.ask_price?.toFixed(2) || 'N/A'}
+                          {(quote as any)?.ask_price?.toFixed(2) || 'N/A'}
                         </span>
                         <span className="font-mono text-gray-300">
-                          {quote.ask_size ? `${(quote.ask_size / 1000).toFixed(0)}K` : 'N/A'}
+                          {(quote as any)?.ask_size ? `${((quote as any).ask_size / 1000).toFixed(0)}K` : 'N/A'}
                         </span>
                       </div>
                       <div className="flex justify-between text-sm opacity-75">
                         <span className="font-mono text-cyber-red">
-                          {quote.ask_price ? (quote.ask_price + 0.02).toFixed(2) : 'N/A'}
+                          {(quote as any)?.ask_price ? ((quote as any).ask_price + 0.02).toFixed(2) : 'N/A'}
                         </span>
                         <span className="font-mono text-gray-300">600K</span>
                       </div>
                       <div className="flex justify-between text-sm opacity-50">
                         <span className="font-mono text-cyber-red">
-                          {quote.ask_price ? (quote.ask_price + 0.04).toFixed(2) : 'N/A'}
+                          {(quote as any)?.ask_price ? ((quote as any).ask_price + 0.04).toFixed(2) : 'N/A'}
                         </span>
                         <span className="font-mono text-gray-300">1.2M</span>
                       </div>
@@ -220,17 +220,17 @@ export function MarketData() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-400">Bid-Ask Spread:</span>
                     <span className="text-sm font-mono text-cyber-amber">
-                      {quote.bid_price && quote.ask_price 
-                        ? `${(quote.ask_price - quote.bid_price).toFixed(4)} (${((quote.ask_price - quote.bid_price) / quote.ask_price * 100).toFixed(3)}%)`
+                      {(quote as any)?.bid_price && (quote as any)?.ask_price 
+                        ? `${((quote as any).ask_price - (quote as any).bid_price).toFixed(4)} (${(((quote as any).ask_price - (quote as any).bid_price) / (quote as any).ask_price * 100).toFixed(3)}%)`
                         : 'N/A'
                       }
                     </span>
                   </div>
-                  {quote.ytm && (
+                  {(quote as any)?.ytm && (
                     <div className="flex justify-between items-center mt-2">
                       <span className="text-sm text-gray-400">YTM:</span>
                       <span className="text-sm font-mono text-cyber-blue">
-                        {quote.ytm.toFixed(3)}%
+                        {(quote as any).ytm.toFixed(3)}%
                       </span>
                     </div>
                   )}

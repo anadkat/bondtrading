@@ -17,11 +17,12 @@ export function BondScreener() {
     rating: "all",
     sector: "all",
     currency: "USD",
-    minYield: "",
-    maxYield: "",
-    minMaturity: "",
-    maxMaturity: "",
+    minYield: 0,
+    maxYield: 0,
+    minMaturity: 0,
+    maxMaturity: 0,
   });
+  const [searchTerm, setSearchTerm] = useState("");
 
   const [selectedBond, setSelectedBond] = useState<BondWithMarketData | null>(null);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
@@ -29,8 +30,12 @@ export function BondScreener() {
 
   const { data: bonds = [], isLoading, error } = useBonds(filters);
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const handleFilterChange = (key: string, value: string | number) => {
+    if (key === 'minYield' || key === 'maxYield' || key === 'minMaturity' || key === 'maxMaturity') {
+      setFilters(prev => ({ ...prev, [key]: typeof value === 'string' ? parseFloat(value) || 0 : value }));
+    } else {
+      setFilters(prev => ({ ...prev, [key]: value }));
+    }
   };
 
   const clearFilters = () => {
@@ -39,10 +44,10 @@ export function BondScreener() {
       rating: "all",
       sector: "all",
       currency: "USD",
-      minYield: "",
-      maxYield: "",
-      minMaturity: "",
-      maxMaturity: "",
+      minYield: 0,
+      maxYield: 0,
+      minMaturity: 0,
+      maxMaturity: 0,
     });
   };
 
@@ -221,7 +226,7 @@ export function BondScreener() {
             <CardTitle>Search Results</CardTitle>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-400">
-                {isLoading ? 'Loading...' : `Showing ${bonds.length} bonds`}
+                {isLoading ? 'Loading...' : `Showing ${Array.isArray(bonds) ? bonds.length : 0} bonds`}
               </span>
               <Button variant="outline" size="sm">
                 <Download className="h-4 w-4" />
@@ -237,7 +242,7 @@ export function BondScreener() {
                 <p className="text-gray-400">Loading bonds...</p>
               </div>
             </div>
-          ) : bonds.length === 0 ? (
+          ) : !Array.isArray(bonds) || bonds.length === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
                 <Search className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -248,7 +253,7 @@ export function BondScreener() {
           ) : (
             <div className="h-full overflow-y-auto scrollbar-custom p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {bonds.map((bond) => (
+                {Array.isArray(bonds) && bonds.map((bond: BondWithMarketData) => (
                   <BondCard
                     key={bond.id}
                     bond={bond}
