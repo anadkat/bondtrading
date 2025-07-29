@@ -25,9 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/bonds", async (req, res) => {
     try {
       const filters = {
-        bondType: req.query.bondType as string,
-        rating: req.query.rating as string,
-        sector: req.query.sector as string,
+        bondType: req.query.bondType === 'all' ? undefined : req.query.bondType as string,
+        rating: req.query.rating === 'all' ? undefined : req.query.rating as string,
+        sector: req.query.sector === 'all' ? undefined : req.query.sector as string,
         currency: req.query.currency as string,
         minYield: req.query.minYield ? parseFloat(req.query.minYield as string) : undefined,
         maxYield: req.query.maxYield ? parseFloat(req.query.maxYield as string) : undefined,

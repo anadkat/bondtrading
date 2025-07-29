@@ -13,9 +13,9 @@ import type { BondWithMarketData } from "@shared/schema";
 
 export function BondScreener() {
   const [filters, setFilters] = useState({
-    bondType: "",
-    rating: "",
-    sector: "",
+    bondType: "all",
+    rating: "all",
+    sector: "all",
     currency: "USD",
     minYield: "",
     maxYield: "",
@@ -35,9 +35,9 @@ export function BondScreener() {
 
   const clearFilters = () => {
     setFilters({
-      bondType: "",
-      rating: "",
-      sector: "",
+      bondType: "all",
+      rating: "all",
+      sector: "all",
       currency: "USD",
       minYield: "",
       maxYield: "",
@@ -91,7 +91,7 @@ export function BondScreener() {
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="corporate">Corporate</SelectItem>
                   <SelectItem value="government">Government</SelectItem>
                   <SelectItem value="municipal">Municipal</SelectItem>
@@ -107,7 +107,7 @@ export function BondScreener() {
                   <SelectValue placeholder="All Ratings" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Ratings</SelectItem>
+                  <SelectItem value="all">All Ratings</SelectItem>
                   <SelectItem value="AAA">AAA</SelectItem>
                   <SelectItem value="AA">AA</SelectItem>
                   <SelectItem value="A">A</SelectItem>
@@ -170,7 +170,7 @@ export function BondScreener() {
                   <SelectValue placeholder="All Sectors" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Sectors</SelectItem>
+                  <SelectItem value="all">All Sectors</SelectItem>
                   <SelectItem value="technology">Technology</SelectItem>
                   <SelectItem value="financial">Financial</SelectItem>
                   <SelectItem value="healthcare">Healthcare</SelectItem>
