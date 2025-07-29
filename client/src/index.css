@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 6%, 10%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(198, 100%, 50%);
+  --primary-foreground: hsl(240, 5.9%, 10%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  
+  /* Custom colors for trading interface */
+  --cyber-blue: hsl(198, 100%, 50%);
+  --cyber-green: hsl(142, 76%, 36%);
+  --cyber-red: hsl(0, 84%, 60%);
+  --cyber-amber: hsl(43, 100%, 50%);
+  --dark-bg: hsl(240, 10%, 3.9%);
+  --dark-card: hsl(240, 6%, 10%);
+  --dark-elevated: hsl(240, 5%, 15%);
+  --dark-border: hsl(240, 3.7%, 15.9%);
+}
+
+.light {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(240, 10%, 3.9%);
+  --muted: hsl(240, 4.8%, 95.9%);
+  --muted-foreground: hsl(240, 3.8%, 46.1%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(240, 10%, 3.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(240, 10%, 3.9%);
+  --border: hsl(240, 5.9%, 90%);
+  --input: hsl(240, 5.9%, 90%);
+  --primary: hsl(198, 100%, 50%);
+  --primary-foreground: hsl(0, 0%, 98%);
+  --secondary: hsl(240, 4.8%, 95.9%);
+  --secondary-foreground: hsl(240, 5.9%, 10%);
+  --accent: hsl(240, 4.8%, 95.9%);
+  --accent-foreground: hsl(240, 5.9%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 5%, 64.9%);
+  
+  /* Light mode trading colors */
+  --cyber-blue: hsl(198, 100%, 40%);
+  --cyber-green: hsl(142, 76%, 30%);
+  --cyber-red: hsl(0, 84%, 50%);
+  --cyber-amber: hsl(43, 100%, 40%);
+  --dark-bg: hsl(0, 0%, 98%);
+  --dark-card: hsl(0, 0%, 100%);
+  --dark-elevated: hsl(240, 4.8%, 95.9%);
+  --dark-border: hsl(240, 5.9%, 90%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background: linear-gradient(135deg, var(--dark-bg) 0%, var(--dark-card) 100%);
+  }
+}
+
+@layer components {
+  .cyber-glow {
+    box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+    border: 1px solid rgba(0, 212, 255, 0.5);
+    transition: box-shadow 0.3s ease;
+  }
+  
+  .cyber-glow:hover {
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+  }
+  
+  .grid-pattern {
+    background-image: 
+      linear-gradient(rgba(0, 212, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 212, 255, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+  
+  .status-indicator {
+    animation: pulse 2s infinite;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-track {
+    background: var(--dark-card);
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    background: var(--cyber-blue);
+    border-radius: 2px;
+  }
+
+  .trading-card {
+    @apply bg-card border border-border rounded-xl p-6 transition-all duration-300;
+    background: var(--dark-card);
+    border-color: var(--dark-border);
+  }
+
+  .trading-card:hover {
+    @apply shadow-lg;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+  }
+
+  .metric-positive {
+    color: var(--cyber-green);
+  }
+
+  .metric-negative {
+    color: var(--cyber-red);
+  }
+
+  .metric-neutral {
+    color: var(--cyber-amber);
+  }
+
+  .font-mono {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+  }
+}
+
+@layer utilities {
+  .text-cyber-blue {
+    color: var(--cyber-blue);
+  }
+  
+  .text-cyber-green {
+    color: var(--cyber-green);
+  }
+  
+  .text-cyber-red {
+    color: var(--cyber-red);
+  }
+  
+  .text-cyber-amber {
+    color: var(--cyber-amber);
+  }
+  
+  .bg-cyber-blue {
+    background-color: var(--cyber-blue);
+  }
+  
+  .bg-cyber-green {
+    background-color: var(--cyber-green);
+  }
+  
+  .bg-cyber-red {
+    background-color: var(--cyber-red);
+  }
+  
+  .bg-cyber-amber {
+    background-color: var(--cyber-amber);
+  }
+
+  .bg-dark-bg {
+    background-color: var(--dark-bg);
+  }
+  
+  .bg-dark-card {
+    background-color: var(--dark-card);
+  }
+  
+  .bg-dark-elevated {
+    background-color: var(--dark-elevated);
+  }
+  
+  .border-dark-border {
+    border-color: var(--dark-border);
+  }
+}
+
+/* Custom animations */
+@keyframes glow {
+  0% { box-shadow: 0 0 5px var(--cyber-blue); }
+  100% { box-shadow: 0 0 20px var(--cyber-blue), 0 0 30px var(--cyber-blue); }
+}
+
+.animate-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+/* Typography improvements for financial data */
+.font-financial {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+.font-mono-financial {
+  font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Improved focus states for accessibility */
+.focus-cyber:focus {
+  outline: 2px solid var(--cyber-blue);
+  outline-offset: 2px;
+}
+
+/* Loading states */
+.loading-pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Responsive breakpoints for trading layouts */
+@media (max-width: 768px) {
+  .trading-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .trading-sidebar.open {
+    transform: translateX(0);
+  }
+}
