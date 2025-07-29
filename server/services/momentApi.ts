@@ -1,3 +1,7 @@
+import { parse } from 'csv-parse/sync';
+import * as yauzl from 'yauzl';
+import { promisify } from 'util';
+
 interface MomentApiConfig {
   baseUrl: string;
   apiKey: string;
@@ -55,10 +59,21 @@ export class MomentApiService {
   private config: MomentApiConfig;
 
   constructor() {
+    // Remove trailing slash if present
+    let baseUrl = process.env.MOMENT_API_BASE_URL || 'https://paper.moment-api.com';
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
+    
     this.config = {
-      baseUrl: process.env.MOMENT_API_BASE_URL || 'https://paper.moment-api.com',
-      apiKey: process.env.MOMENT_API_KEY || process.env.API_KEY || ''
+      baseUrl,
+      apiKey: process.env.MOMENT_API_KEY || process.env.API_KEY || 'msk_papr.5dde1e4b.qcUk-rVwMth7b7woezLIk_lAtLwL_Kg0'
     };
+    console.log('MomentApiService initialized with:', {
+      baseUrl: this.config.baseUrl,
+      apiKey: this.config.apiKey.substring(0, 20) + '...',
+      fullEndpoint: `${this.config.baseUrl}/v1/data/instrument/bulk-download/`
+    });
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -76,6 +91,14 @@ export class MomentApiService {
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Moment API Error (${response.status}): ${errorText}`);
+    }
+
+    // Check if response is CSV/ZIP (for bulk download)
+    const contentType = response.headers.get('content-type') || '';
+    console.log('Response content type:', contentType);
+    if (contentType.includes('text/csv') || contentType.includes('application/octet-stream') || contentType.includes('application/zip') || endpoint.includes('bulk-download')) {
+      const buffer = await response.arrayBuffer();
+      return buffer as unknown as T;
     }
 
     return response.json();
@@ -114,12 +137,85 @@ export class MomentApiService {
   async bulkDownload(): Promise<MomentBond[]> {
     const endpoint = '/v1/data/instrument/bulk-download/';
     try {
-      const response = await this.makeRequest<MomentBond[]>(endpoint);
-      return Array.isArray(response) ? response : [];
+      const buffer = await this.makeRequest<ArrayBuffer>(endpoint);
+      console.log('Bulk download response type:', typeof buffer);
+      console.log('Buffer length:', buffer.byteLength);
+
+      // Convert ArrayBuffer to Buffer for yauzl
+      const zipBuffer = Buffer.from(buffer);
+      
+      // Extract CSV from ZIP
+      const csvData = await this.extractCSVFromZip(zipBuffer);
+      console.log('CSV data length:', csvData.length);
+      console.log('CSV data preview:', csvData.substring(0, 500));
+
+      // Parse CSV data
+      const records = parse(csvData, {
+        columns: true,
+        skip_empty_lines: true,
+        trim: true,
+      });
+
+      console.log('Parsed records count:', records.length);
+      if (records.length > 0) {
+        console.log('First record keys:', Object.keys(records[0]));
+        console.log('First record:', records[0]);
+      }
+
+      // Map CSV records to MomentBond format
+      const bonds: MomentBond[] = records.map((record: any) => ({
+        instrument_id: record.instrument_id || record.isin || record.ISIN,
+        isin: record.isin || record.ISIN,
+        cusip: record.cusip || record.CUSIP,
+        issuer: record.issuer || record.issuer_name,
+        description: record.description || record.bond_description,
+        bond_type: record.bond_type || record.asset_type || 'corporate',
+        sector: record.sector || record.industry_sector,
+        rating: record.rating || record.credit_rating,
+        coupon: record.coupon ? parseFloat(record.coupon) : undefined,
+        maturity_date: record.maturity_date || record.maturity,
+        currency: record.currency || 'USD',
+        par_value: record.par_value ? parseFloat(record.par_value) : 1000,
+        status: record.status || 'outstanding',
+      }));
+
+      console.log('Mapped bonds count:', bonds.length);
+      return bonds.filter(bond => bond.instrument_id && bond.isin);
     } catch (error) {
       console.error('Bulk download failed:', error);
       return [];
     }
+  }
+
+  private async extractCSVFromZip(zipBuffer: Buffer): Promise<string> {
+    return new Promise((resolve, reject) => {
+      yauzl.fromBuffer(zipBuffer, { lazyEntries: true }, (err, zipfile) => {
+        if (err) return reject(err);
+        if (!zipfile) return reject(new Error('No zipfile'));
+
+        zipfile.readEntry();
+        zipfile.on('entry', (entry) => {
+          if (entry.fileName.endsWith('.csv')) {
+            zipfile.openReadStream(entry, (err, readStream) => {
+              if (err) return reject(err);
+              if (!readStream) return reject(new Error('No readStream'));
+
+              let csvData = '';
+              readStream.on('data', (chunk) => {
+                csvData += chunk.toString();
+              });
+              readStream.on('end', () => {
+                resolve(csvData);
+              });
+              readStream.on('error', reject);
+            });
+          } else {
+            zipfile.readEntry();
+          }
+        });
+        zipfile.on('error', reject);
+      });
+    });
   }
 
   // Market Data Methods
