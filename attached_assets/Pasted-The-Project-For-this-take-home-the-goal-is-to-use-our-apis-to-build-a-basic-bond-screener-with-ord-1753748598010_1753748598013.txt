@@ -1,0 +1,27 @@
+The Project 
+For this take home, the goal is to use our apis to build a basic bond screener with order submission using a low-code app like retool or via code (note: the use of AI is permitted/encouraged).
+
+The bond screener should allow you to: 
+- Authenticate via api key
+- Search/filter for a bond (or bonds)
+- View extended details on that bond (our docs will have a number of options here such as current bid/offer, historical prices etc)
+- Submit a buy/sell order for the bond and track the order's status
+
+To retrieve the relevant data, you’ll need to connect to a couple of our APIs. We’ve provided an API key for our paper environment (this environment is what we give to customers to test out their initial integration with our APIs, and is mostly simulated data). You can view our full API documentation here (password: M0mentDoc$). We also have a guide on getting started with our fixed income data product available here. If you find yourself using the inventory endpoint, there is an undocumented `use_close_data_after_hours` parameter which when set to `true` will use the 4PM snapshot of the available markets which you may find helpful.
+
+
+
+The final deliverable for the project is a link/login that we can use to try out the bond screener. We'll ask you to run through this and present it as part of the final round as well.
+
+
+
+Hints + helpful information
+
+Bonds are identified by their ISIN (International Securities Identifier). North American securities also receive a CUSIP identifier (fun fact: ISINs and CUSIPs are related! For US issued bonds, a bond’s ISIN is the same as US + <CUSIP> + <check digit>). When the docs reference a bond's “instrument id” it’s referring to this.
+You’ll want to submit orders for bonds with status = outstanding. To view all instruments available in our paper environment, and get a better sense of all the data we have available on a bond, you can use the bulk download endpoint.
+Moment maintains two fully separate environments, live (you’re trading real money, and have data on 1MM+ bonds) and paper (you’re trading against a simulation, and there is data on ~100 bonds). We have a paper environment to allow our customers to build out their integrations without any risk of accessing live markets. A few things to note here:
+Your API key has been issued for the paper environment and only has access to the reference data and market data endpoints.
+This means that you can only send requests to https://paper.moment-api.com/...
+Our APIs only allow requests to be made with https/port 443, if you send a request on port 80/http it won’t go through.
+
+This problem is intentionally vague as are most of the problems we'll be solving for at Moment, that doesn't mean you can't ask questions though! Min and I are happy to answer any questions from your end via email or text (see cell in signature) and are also happy to hop on a call as necessary. 
