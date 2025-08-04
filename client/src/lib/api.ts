@@ -5,6 +5,7 @@ const API_BASE_URL = process.env.NODE_ENV === 'production'
   ? '' // Use relative paths in production (same domain)
   : "http://localhost:8000"; // Use localhost in development
 
+
 export async function apiRequest(
   method: string,
   url: string,
