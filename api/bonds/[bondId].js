@@ -23,53 +23,26 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = 'msk_papr.5dde1e4b.qcUk-rVwMth7b7woezLIk_lAtLwL_Kg0';
+    const url = `https://paper.moment-api.com/v1/data/instrument/${bondId}/`;
     
-    // First try direct bond lookup
-    let url = `https://paper.moment-api.com/v1/data/instrument/${bondId}/`;
-    let response = await fetch(url, {
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
       }
     });
 
-    let data;
-    
     if (!response.ok) {
-      // If direct lookup fails, search through all bonds
-      console.log('Direct lookup failed, searching through all bonds...');
-      url = 'https://paper.moment-api.com/v1/data/instrument/?status=outstanding&limit=100';
-      response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        res.status(500).json({ error: 'Failed to fetch bond details' });
-        return;
-      }
-
-      const allBondsData = await response.json();
-      let instruments = [];
-      
-      if (allBondsData && typeof allBondsData === 'object' && allBondsData.data) {
-        instruments = allBondsData.data;
-      } else if (Array.isArray(allBondsData)) {
-        instruments = allBondsData;
-      }
-
-      // Find the specific bond
-      data = instruments.find(bond => bond.id === bondId || bond.isin === bondId);
-      
-      if (!data) {
+      if (response.status === 404) {
         res.status(404).json({ error: 'Bond not found' });
         return;
       }
-    } else {
-      data = await response.json();
+      console.error('Moment API error:', response.status, response.statusText);
+      res.status(500).json({ error: 'Failed to fetch bond details' });
+      return;
     }
+
+    const data = await response.json();
     
     // Convert to frontend format
     const bond = {
