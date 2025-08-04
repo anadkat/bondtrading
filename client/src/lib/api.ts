@@ -1,7 +1,9 @@
 import { queryClient } from "./queryClient";
 
-// Use Python backend on port 8000
-const API_BASE_URL = "http://localhost:8000";
+// Use Python backend - localhost for dev, relative path for production
+const API_BASE_URL = process.env.NODE_ENV === 'production' 
+  ? '' // Use relative paths in production (same domain)
+  : "http://localhost:8000"; // Use localhost in development
 
 export async function apiRequest(
   method: string,
