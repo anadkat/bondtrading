@@ -1,11 +1,17 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/public",
-  "functions": {
-    "python-backend/app/main.py": {
-      "runtime": "@vercel/python"
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist/public"
+      }
+    },
+    {
+      "src": "python-backend/app/main.py",
+      "use": "@vercel/python@4.3.0"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/api/(.*)",
