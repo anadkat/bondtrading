@@ -84,7 +84,12 @@ export default async function handler(req, res) {
     }
 
     if (rating && rating !== 'all') {
-      bonds = bonds.filter(bond => bond.rating === rating);
+      if (rating === 'NR') {
+        // Filter for bonds with no rating (null or undefined)
+        bonds = bonds.filter(bond => !bond.rating);
+      } else {
+        bonds = bonds.filter(bond => bond.rating === rating);
+      }
     }
 
     if (sector && sector !== 'all') {
