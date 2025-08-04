@@ -82,6 +82,15 @@ export const momentApi = {
     return apiGet(`/api/bonds/${id}/order-book`);
   },
 
+  async getBondHistoricalPrices(id: string, startDate: string, endDate: string, frequency: string = '1day') {
+    const params = new URLSearchParams({
+      start: startDate,
+      end: endDate,
+      frequency: frequency
+    });
+    return apiGet(`/api/bonds/${id}/prices?${params.toString()}`);
+  },
+
 
 
 

@@ -46,6 +46,15 @@ export function useBondOrderBook(id: string) {
   });
 }
 
+export function useBondHistoricalPrices(id: string, startDate: string, endDate: string, frequency: string = '1day') {
+  return useQuery({
+    queryKey: ['/api/bonds', id, 'prices', startDate, endDate, frequency],
+    queryFn: () => momentApi.getBondHistoricalPrices(id, startDate, endDate, frequency),
+    enabled: !!id && !!startDate && !!endDate,
+    staleTime: 60000, // 1 minute - historical data doesn't change frequently
+  });
+}
+
 
 
 // Order hooks

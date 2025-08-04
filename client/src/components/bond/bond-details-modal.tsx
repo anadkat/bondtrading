@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBond, useBondQuote, useBondOrderBook } from "@/hooks/use-moment-api";
+import { useBond, useBondQuote, useBondOrderBook, useBondHistoricalPrices } from "@/hooks/use-moment-api";
 import { 
   Building, 
   Calendar, 
@@ -33,6 +33,16 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
   const { data: bond, isLoading: bondLoading } = useBond(bondId || '');
   const { data: quote, isLoading: quoteLoading } = useBondQuote(bondId || '');
   const { data: orderBook, isLoading: orderBookLoading } = useBondOrderBook(bondId || '');
+  
+  // Historical pricing - last 30 days
+  const endDate = new Date().toISOString().split('T')[0]; // Today
+  const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // 30 days ago
+  const { data: historicalPrices, isLoading: pricesLoading } = useBondHistoricalPrices(
+    bondId || '', 
+    startDate, 
+    endDate, 
+    '1day'
+  );
 
   if (!bondId) return null;
 
@@ -124,9 +134,10 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
 
           <div className="flex-1 overflow-y-auto p-6">
             <Tabs defaultValue="overview" className="h-full">
-              <TabsList className="grid w-full grid-cols-2 bg-dark-elevated">
+              <TabsList className="grid w-full grid-cols-3 bg-dark-elevated">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="pricing">Market Data</TabsTrigger>
+                <TabsTrigger value="historical">Historical</TabsTrigger>
               </TabsList>
 
               <TabsContent value="overview" className="space-y-6 mt-6">
@@ -371,6 +382,107 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                         </div>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="historical" className="space-y-6 mt-6">
+                <Card className="cyber-glow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <TrendingUp className="h-5 w-5 mr-2" />
+                      Historical Pricing (Last 30 Days)
+                      <Badge variant="outline" className="ml-2 text-xs">Live Data</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {pricesLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-cyber-blue border-t-transparent mx-auto mb-2"></div>
+                        <p className="text-gray-400 text-sm">Loading historical data...</p>
+                      </div>
+                    ) : historicalPrices?.data && historicalPrices.data.length > 0 ? (
+                      <div className="space-y-6">
+                        {/* Price Summary */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="p-3 bg-dark-elevated rounded-lg">
+                            <p className="text-gray-400 text-sm mb-1">Latest Price</p>
+                            <p className="text-xl font-mono text-cyber-green">
+                              ${historicalPrices.data[historicalPrices.data.length - 1]?.price?.toFixed(4) || 'N/A'}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {new Date(historicalPrices.data[historicalPrices.data.length - 1]?.timestamp || '').toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="p-3 bg-dark-elevated rounded-lg">
+                            <p className="text-gray-400 text-sm mb-1">30-Day Range</p>
+                            <p className="text-sm font-mono text-white">
+                              ${Math.min(...historicalPrices.data.map(p => p.price || 0)).toFixed(4)} - ${Math.max(...historicalPrices.data.map(p => p.price || 0)).toFixed(4)}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {historicalPrices.count || historicalPrices.data.length} data points
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Recent Price Points */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-300 mb-3">Recent Prices</h4>
+                          <div className="max-h-64 overflow-y-auto scrollbar-custom">
+                            <div className="space-y-2">
+                              {historicalPrices.data.slice(-10).reverse().map((point, index) => (
+                                <div key={point.timestamp || index} className="flex justify-between items-center p-3 bg-dark-elevated rounded">
+                                  <div>
+                                    <p className="text-white font-mono text-sm">${point.price?.toFixed(4) || 'N/A'}</p>
+                                    <p className="text-xs text-gray-400">{new Date(point.timestamp || '').toLocaleDateString()}</p>
+                                  </div>
+                                  <div className="text-right">
+                                    {point.yield_to_maturity && (
+                                      <p className="text-cyber-blue font-mono text-sm">{point.yield_to_maturity.toFixed(3)}%</p>
+                                    )}
+                                    {point.yield_to_worst && (
+                                      <p className="text-cyber-amber font-mono text-xs">{point.yield_to_worst.toFixed(3)}% YTW</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Price Statistics */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-300 mb-3">Price Statistics</h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-3 bg-dark-elevated rounded-lg">
+                              <p className="text-gray-400 text-sm mb-1">Average Price</p>
+                              <p className="text-lg font-mono text-white">
+                                ${(historicalPrices.data.reduce((sum, p) => sum + (p.price || 0), 0) / historicalPrices.data.length).toFixed(4)}
+                              </p>
+                              <p className="text-xs text-gray-400">30-day average</p>
+                            </div>
+                            <div className="p-3 bg-dark-elevated rounded-lg">
+                              <p className="text-gray-400 text-sm mb-1">Price Volatility</p>
+                              <p className="text-lg font-mono text-cyber-amber">
+                                {(() => {
+                                  const prices = historicalPrices.data.map(p => p.price || 0);
+                                  const avg = prices.reduce((sum, p) => sum + p, 0) / prices.length;
+                                  const variance = prices.reduce((sum, p) => sum + Math.pow(p - avg, 2), 0) / prices.length;
+                                  return (Math.sqrt(variance) / avg * 100).toFixed(2);
+                                })()}%
+                              </p>
+                              <p className="text-xs text-gray-400">Standard deviation</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-300 mb-2">No Historical Data</h3>
+                        <p className="text-gray-400">Historical pricing data is not available for this bond in the paper environment.</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
