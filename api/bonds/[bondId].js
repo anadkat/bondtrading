@@ -23,7 +23,9 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = 'msk_papr.5dde1e4b.qcUk-rVwMth7b7woezLIk_lAtLwL_Kg0';
-    const url = `https://paper.moment-api.com/v1/data/instrument/${bondId}/`;
+    
+    // Since direct lookup by ID doesn't work well, search through all bonds
+    const url = 'https://paper.moment-api.com/v1/data/instrument/?status=outstanding&limit=100';
     
     const response = await fetch(url, {
       headers: {
@@ -33,20 +35,32 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      if (response.status === 404) {
-        res.status(404).json({ error: 'Bond not found' });
-        return;
-      }
       console.error('Moment API error:', response.status, response.statusText);
       res.status(500).json({ error: 'Failed to fetch bond details' });
       return;
     }
 
-    const data = await response.json();
+    const allBondsData = await response.json();
+    
+    // Parse response
+    let instruments = [];
+    if (allBondsData && typeof allBondsData === 'object' && allBondsData.data) {
+      instruments = allBondsData.data;
+    } else if (Array.isArray(allBondsData)) {
+      instruments = allBondsData;
+    }
+
+    // Find the specific bond by ISIN (which we're using as ID)
+    const data = instruments.find(item => item.isin === bondId || item.id === bondId);
+    
+    if (!data) {
+      res.status(404).json({ error: 'Bond not found' });
+      return;
+    }
     
     // Convert to frontend format
     const bond = {
-      id: data.id || '',
+      id: data.isin || data.id || '', // Use ISIN as primary ID
       isin: data.isin || '',
       cusip: data.cusip || null,
       issuer: data.issuer || 'Unknown Issuer',

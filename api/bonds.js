@@ -59,7 +59,7 @@ export default async function handler(req, res) {
 
     // Convert to frontend format
     let bonds = instruments.map(item => ({
-      id: item.id || '',
+      id: item.isin || item.id || '', // Use ISIN as primary ID since API IDs are empty
       isin: item.isin || '',
       cusip: item.cusip || null,
       issuer: item.issuer || 'Unknown Issuer',
