@@ -277,122 +277,106 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                     <CardTitle className="flex items-center">
                       <BarChart3 className="h-5 w-5 mr-2" />
                       Market Data
-                      <Badge variant="outline" className="ml-2 text-xs">Paper API</Badge>
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-6">
-                      {/* Available Pricing Data */}
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
-                          <DollarSign className="h-4 w-4 mr-2" />
-                          Market Pricing Data
-                          {quote?.status === 'estimated' && (
-                            <Badge variant="outline" className="ml-2 text-xs border-cyber-amber text-cyber-amber">Estimated</Badge>
-                          )}
-                          {quote?.status === 'no_data_available' && (
-                            <Badge variant="outline" className="ml-2 text-xs border-gray-500 text-gray-400">No Data</Badge>
-                          )}
-                        </h4>
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Best Bid</p>
-                            <p className="text-xl font-mono text-cyber-green">
-                              {quoteLoading ? (
-                                <span className="text-sm">Loading...</span>
-                              ) : quote?.bid_price ? (
-                                formatCurrency(quote.bid_price.toString())
-                              ) : (
-                                bond?.lastPrice ? formatCurrency(bond.lastPrice) : 'N/A'
-                              )}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {quote?.bid_size ? `Size: ${quote.bid_size.toLocaleString()}` : 
-                               quote?.status === 'estimated' ? 'Estimated from bond data' :
-                               quote?.status === 'no_data_available' ? 'No quote data' : 'Last known price'}
-                            </p>
-                          </div>
-                          <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Best Ask</p>
-                            <p className="text-xl font-mono text-cyber-red">
-                              {quoteLoading ? (
-                                <span className="text-sm">Loading...</span>
-                              ) : quote?.ask_price ? (
-                                formatCurrency(quote.ask_price.toString())
-                              ) : (
-                                'N/A'
-                              )}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {quote?.ask_size ? `Size: ${quote.ask_size.toLocaleString()}` : 
-                               quote?.status === 'estimated' ? 'Estimated from bond data' :
-                               quote?.status === 'no_data_available' ? 'No quote data' : 'No quote available'}
-                            </p>
+                    {orderBookLoading ? (
+                      <div className="text-center py-8">
+                        <div className="animate-spin rounded-full h-6 w-6 border-2 border-cyber-blue border-t-transparent mx-auto mb-2"></div>
+                        <p className="text-gray-400 text-sm">Loading order book...</p>
+                      </div>
+                    ) : orderBook && (orderBook.bids?.length > 0 || orderBook.asks?.length > 0) ? (
+                      <div className="space-y-6">
+                        {/* Order Book Summary */}
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                            <BarChart3 className="h-4 w-4 mr-2" />
+                            Order Book Activity
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-3 bg-dark-elevated rounded-lg border border-cyber-green/20">
+                              <p className="text-gray-400 text-sm mb-1">Total Bids</p>
+                              <p className="text-lg font-mono text-cyber-green">
+                                {orderBook.bids?.length || 0}
+                              </p>
+                              <p className="text-xs text-gray-400">Active buy orders</p>
+                            </div>
+                            <div className="p-3 bg-dark-elevated rounded-lg border border-cyber-red/20">
+                              <p className="text-gray-400 text-sm mb-1">Total Asks</p>
+                              <p className="text-lg font-mono text-cyber-red">
+                                {orderBook.asks?.length || 0}
+                              </p>
+                              <p className="text-xs text-gray-400">Active sell orders</p>
+                            </div>
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4 mb-4">
-                          <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Bid Yield (YTM)</p>
-                            <p className="text-xl font-mono text-cyber-blue">
-                              {quote?.bid_yield_to_maturity ? 
-                                formatPercentage(quote.bid_yield_to_maturity.toString()) : 
-                                (bond?.ytm ? formatPercentage(bond.ytm) : 'N/A')
-                              }
-                            </p>
-                            <p className="text-xs text-gray-400">Yield to Maturity</p>
+                        {/* Detailed Order Book */}
+                        <div className="grid grid-cols-2 gap-4">
+                          {/* Bids */}
+                          <div>
+                            <h5 className="text-xs font-medium text-cyber-green mb-2 uppercase">Bids ({orderBook.bids?.length || 0})</h5>
+                            <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-custom">
+                              {orderBook.bids && orderBook.bids.length > 0 ? (
+                                orderBook.bids.slice(0, 10).map((bid, index) => (
+                                  <div key={index} className="flex justify-between items-center p-2 bg-dark-elevated rounded text-sm">
+                                    <span className="font-mono text-cyber-green">${bid.price?.toFixed(4) || 'N/A'}</span>
+                                    <span className="font-mono text-white">{bid.size?.toLocaleString() || 'N/A'}</span>
+                                    {bid.yield_to_maturity && (
+                                      <span className="font-mono text-cyber-blue text-xs">{bid.yield_to_maturity.toFixed(3)}%</span>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-6 bg-dark-elevated rounded">
+                                  <p className="text-gray-400 text-sm">No active bids</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Bid Yield (YTW)</p>
-                            <p className="text-xl font-mono text-cyber-amber">
-                              {quote?.bid_yield_to_worst ? 
-                                formatPercentage(quote.bid_yield_to_worst.toString()) : 
-                                (bond?.ytw ? formatPercentage(bond.ytw) : 'N/A')
-                              }
-                            </p>
-                            <p className="text-xs text-gray-400">Yield to Worst</p>
+                          
+                          {/* Asks */}
+                          <div>
+                            <h5 className="text-xs font-medium text-cyber-red mb-2 uppercase">Asks ({orderBook.asks?.length || 0})</h5>
+                            <div className="space-y-1 max-h-48 overflow-y-auto scrollbar-custom">
+                              {orderBook.asks && orderBook.asks.length > 0 ? (
+                                orderBook.asks.slice(0, 10).map((ask, index) => (
+                                  <div key={index} className="flex justify-between items-center p-2 bg-dark-elevated rounded text-sm">
+                                    <span className="font-mono text-cyber-red">${ask.price?.toFixed(4) || 'N/A'}</span>
+                                    <span className="font-mono text-white">{ask.size?.toLocaleString() || 'N/A'}</span>
+                                    {ask.yield_to_maturity && (
+                                      <span className="font-mono text-cyber-blue text-xs">{ask.yield_to_maturity.toFixed(3)}%</span>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="text-center py-6 bg-dark-elevated rounded">
+                                  <p className="text-gray-400 text-sm">No active asks</p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
-
-                        {/* Order Book Summary */}
-                        {orderBook && (orderBook.bids?.length > 0 || orderBook.asks?.length > 0) && (
-                          <div className="mt-6">
-                            <h5 className="text-sm font-semibold text-gray-300 mb-3">Order Book Activity</h5>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="p-3 bg-dark-elevated rounded-lg border border-cyber-green/20">
-                                <p className="text-gray-400 text-sm mb-1">Total Bids</p>
-                                <p className="text-lg font-mono text-cyber-green">
-                                  {orderBook.bids?.length || 0}
-                                </p>
-                                <p className="text-xs text-gray-400">Active buy orders</p>
-                              </div>
-                              <div className="p-3 bg-dark-elevated rounded-lg border border-cyber-red/20">
-                                <p className="text-gray-400 text-sm mb-1">Total Asks</p>
-                                <p className="text-lg font-mono text-cyber-red">
-                                  {orderBook.asks?.length || 0}
-                                </p>
-                                <p className="text-xs text-gray-400">Active sell orders</p>
-                              </div>
+                        
+                        {/* Order Book Status */}
+                        {orderBook.timestamp && (
+                          <div className="p-3 bg-dark-elevated rounded-lg">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">Last Updated:</span>
+                              <span className="text-gray-300">
+                                {new Date(orderBook.timestamp).toLocaleTimeString()}
+                              </span>
                             </div>
                           </div>
                         )}
                       </div>
-
-                      {/* Paper API Notice */}
-                      <div className="p-4 bg-dark-elevated rounded-lg border border-cyber-amber/20">
-                        <div className="flex items-start space-x-3">
-                          <Info className="h-5 w-5 text-cyber-amber mt-0.5" />
-                          <div>
-                            <h5 className="text-sm font-medium text-cyber-amber mb-1">Paper API Environment</h5>
-                            <p className="text-xs text-gray-400">
-                              This demo uses Moment's Paper API environment. When live quotes aren't available, 
-                              we generate estimated bid/ask spreads from bond data to demonstrate the interface. 
-                              Production environments would show real-time market data.
-                            </p>
-                          </div>
-                        </div>
+                    ) : (
+                      <div className="text-center py-12">
+                        <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-300 mb-2">No Order Book Data</h3>
+                        <p className="text-gray-400">Order book data is not available for this bond.</p>
                       </div>
-                    </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
