@@ -1,3 +1,6 @@
+// In-memory storage for demo purposes
+let ordersStore = [];
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,9 +15,22 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     // Get orders
     try {
-      // Return empty orders array for now
-      // In a real app, this would fetch from a database
-      res.status(200).json([]);
+      // Transform to frontend format
+      const frontendOrders = ordersStore.map(order => ({
+        id: order.order_id,
+        bond_id: order.instrument_id, // Use bond_id to match frontend expectations
+        action: order.side, // Map 'side' to 'action' for frontend
+        quantity: order.quantity,
+        price: order.price,
+        order_type: order.order_type, // Use order_type to match frontend expectations
+        status: order.status,
+        created_at: order.created_at,
+        updated_at: order.updated_at,
+        filled_quantity: order.filled_quantity,
+        average_fill_price: order.average_fill_price
+      }));
+      
+      res.status(200).json(frontendOrders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       res.status(500).json({ error: 'Internal server error' });
@@ -50,8 +66,20 @@ export default async function handler(req, res) {
         fees: null
       };
 
+      // Store the order in memory
+      ordersStore.push(mockOrder);
+
       // Simulate some processing delay
       await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+
+      // Simulate order status update (some orders get filled quickly)
+      const shouldFill = Math.random() > 0.5;
+      if (shouldFill) {
+        mockOrder.status = 'filled';
+        mockOrder.filled_quantity = mockOrder.quantity;
+        mockOrder.average_fill_price = mockOrder.price || (95 + Math.random() * 10); // Mock fill price
+        mockOrder.updated_at = new Date().toISOString();
+      }
 
       res.status(200).json(mockOrder);
 

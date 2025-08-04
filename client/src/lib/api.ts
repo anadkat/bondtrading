@@ -73,23 +73,6 @@ export const momentApi = {
     return apiGet(`/api/bonds/${id}`);
   },
 
-  async getBondQuote(id: string, quantity?: number) {
-    const params = quantity ? `?quantity=${quantity}` : '';
-    return apiGet(`/api/bonds/${id}/quote${params}`);
-  },
-
-  async getBondHistoricalPrices(id: string, startDate: string, endDate: string, frequency: string = '1day') {
-    const params = new URLSearchParams({
-      start: startDate,
-      end: endDate,
-      frequency: frequency
-    });
-    return apiGet(`/api/bonds/${id}/prices?${params.toString()}`);
-  },
-
-  async getBondOrderBook(id: string) {
-    return apiGet(`/api/bonds/${id}/order-book`);
-  },
 
 
 
@@ -112,10 +95,4 @@ export const momentApi = {
   },
 
 
-  // System operations
-  async syncBonds() {
-    const response = await apiPost('/api/sync-bonds');
-    queryClient.invalidateQueries({ queryKey: ['/api/bonds'] });
-    return response;
-  }
 };
