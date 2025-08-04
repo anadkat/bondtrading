@@ -2,15 +2,122 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import sys
-from typing import Optional, List
+import httpx
+import asyncio
+import json
+import random
+import time
+from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
+from pydantic import BaseModel
+from enum import Enum
 
-# Add the python-backend directory to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'python-backend'))
+# Simple Bond model for Vercel deployment
+class Bond(BaseModel):
+    id: str
+    isin: str
+    cusip: Optional[str] = None
+    issuer: str
+    description: str
+    bond_type: str = "corporate"
+    sector: Optional[str] = None
+    rating: Optional[str] = None
+    coupon: Optional[str] = None
+    maturity_date: Optional[datetime] = None
+    currency: str = "USD"
+    par_value: Optional[str] = None
+    last_price: Optional[str] = None
+    ytm: Optional[str] = None
+    ytw: Optional[str] = None
+    status: str = "outstanding"
+    updated_at: Optional[datetime] = None
 
-from app.models import Bond, Order, OrderRequest, OrderResponse, HistoricalPrices, OrderBook
-from app.services.moment_api import MomentAPIService
-from app.storage import BondStorage
+    @classmethod
+    def from_moment_api(cls, data: Dict[str, Any]) -> "Bond":
+        return cls(
+            id=data.get("id", ""),
+            isin=data.get("isin", ""),
+            cusip=data.get("cusip"),
+            issuer=data.get("issuer", "Unknown Issuer"),
+            description=data.get("description", ""),
+            bond_type=data.get("asset_class", "corporate").lower(),
+            sector=data.get("sector"),
+            rating=data.get("rating"),
+            coupon=str(data.get("coupon")) if data.get("coupon") else None,
+            maturity_date=datetime.fromisoformat(data["maturity_date"].replace("Z", "+00:00")) if data.get("maturity_date") else None,
+            currency=data.get("currency", "USD"),
+            par_value=str(data.get("par_value")) if data.get("par_value") else None,
+            last_price=str(data.get("last_price")) if data.get("last_price") else None,
+            ytm=str(data.get("yield_to_maturity")) if data.get("yield_to_maturity") else None,
+            ytw=str(data.get("yield_to_worst")) if data.get("yield_to_worst") else None,
+            status=data.get("status", "outstanding"),
+            updated_at=datetime.now()
+        )
+
+# Simple storage
+class BondStorage:
+    def __init__(self):
+        self.bonds: Dict[str, Bond] = {}
+    
+    def add_bond(self, bond: Bond) -> None:
+        self.bonds[bond.id] = bond
+    
+    def get_bond(self, bond_id: str) -> Optional[Bond]:
+        return self.bonds.get(bond_id)
+    
+    def get_all_bonds(self) -> List[Bond]:
+        return list(self.bonds.values())
+    
+    def search_bonds(self, filters: Dict[str, Any]) -> List[Bond]:
+        bonds = list(self.bonds.values())
+        
+        if 'bond_type' in filters:
+            bonds = [b for b in bonds if b.bond_type == filters['bond_type']]
+        
+        if 'rating' in filters:
+            bonds = [b for b in bonds if b.rating == filters['rating']]
+        
+        if 'sector' in filters:
+            bonds = [b for b in bonds if b.sector == filters['sector']]
+        
+        if 'currency' in filters:
+            bonds = [b for b in bonds if b.currency == filters['currency']]
+        
+        return bonds
+
+# Moment API Service
+class MomentAPIService:
+    def __init__(self):
+        self.base_url = "https://paper.moment-api.com"
+        self.api_key = "msk_papr.5dde1e4b.qcUk-rVwMth7b7woezLIk_lAtLwL_Kg0"
+        self.headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+    
+    async def get_instruments(self, status: str = "outstanding", limit: int = 100) -> List[Dict[str, Any]]:
+        try:
+            params = f"?status={status}&limit={limit}"
+            url = f"{self.base_url}/v1/data/instrument/{params}"
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.get(url, headers=self.headers)
+                
+                if response.status_code != 200:
+                    return []
+                
+                data = response.json()
+                
+                if isinstance(data, dict) and "data" in data:
+                    return data["data"]
+                elif isinstance(data, list):
+                    return data
+                else:
+                    return []
+                    
+        except Exception as e:
+            return []
 
 # Global storage instance
 bond_storage = BondStorage()

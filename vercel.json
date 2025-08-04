@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.9"
+    }
+  },
   "builds": [
     {
       "src": "package.json",
@@ -6,10 +11,6 @@
       "config": {
         "distDir": "dist/public"
       }
-    },
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python@4.3.0"
     }
   ],
   "routes": [
