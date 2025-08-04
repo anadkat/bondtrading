@@ -28,33 +28,6 @@ export function useBond(id: string) {
   });
 }
 
-export function useBondQuote(id: string, quantity?: number) {
-  return useQuery({
-    queryKey: ['/api/bonds', id, 'quote', quantity],
-    queryFn: () => momentApi.getBondQuote(id, quantity),
-    enabled: !!id,
-    refetchInterval: 10000, // Refresh every 10 seconds
-  });
-}
-
-export function useBondHistoricalPrices(id: string, startDate: string, endDate: string, frequency: string = '1day') {
-  return useQuery({
-    queryKey: ['/api/bonds', id, 'prices', startDate, endDate, frequency],
-    queryFn: () => momentApi.getBondHistoricalPrices(id, startDate, endDate, frequency),
-    enabled: !!id && !!startDate && !!endDate,
-    staleTime: 60000, // 1 minute - historical data doesn't change frequently
-  });
-}
-
-export function useBondOrderBook(id: string) {
-  return useQuery({
-    queryKey: ['/api/bonds', id, 'order-book'],
-    queryFn: () => momentApi.getBondOrderBook(id),
-    enabled: !!id,
-    refetchInterval: 5000, // Refresh every 5 seconds for order book updates
-  });
-}
-
 
 
 // Order hooks
@@ -92,26 +65,3 @@ export function useSubmitOrder() {
 
 
 
-// System operations
-export function useSyncBonds() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: momentApi.syncBonds,
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/bonds'] });
-      toast({
-        title: "Sync Complete",
-        description: `Synced ${data.synced_count} new bonds from Moment API`,
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Sync Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
