@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useSubmitOrder, useBondQuote } from "@/hooks/use-moment-api";
+import { useSubmitOrder, useBondQuote, useBondHistoricalPrices } from "@/hooks/use-moment-api";
 import { useToast } from "@/hooks/use-toast";
 import { 
   TrendingUp, 
@@ -16,7 +16,7 @@ import {
   DollarSign,
   Clock
 } from "lucide-react";
-import type { BondWithMarketData } from "@shared/schema";
+import type { BondWithMarketData } from "@/types/bond";
 
 interface OrderModalProps {
   isOpen: boolean;
@@ -34,6 +34,22 @@ export function OrderModal({ isOpen, onClose, bond, action }: OrderModalProps) {
   const { toast } = useToast();
   const submitOrder = useSubmitOrder();
   const { data: quote } = useBondQuote(bond.id, parseInt(quantity) || 1000000);
+  
+  // Get historical pricing as fallback for current market data
+  const endDate = new Date().toISOString().split('T')[0];
+  const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // Last 7 days
+  const { data: historicalPrices } = useBondHistoricalPrices(bond.id, startDate, endDate, '1day');
+
+  // Get latest market data from historical prices as fallback
+  const latestHistoricalPrice = historicalPrices?.data && historicalPrices.data.length > 0 
+    ? historicalPrices.data[historicalPrices.data.length - 1] 
+    : null;
+
+  // Smart fallback for market data
+  const currentBid = quote?.bid_price || (latestHistoricalPrice?.price ? latestHistoricalPrice.price * 0.999 : null);
+  const currentAsk = quote?.ask_price || (latestHistoricalPrice?.price ? latestHistoricalPrice.price * 1.001 : null);
+  const currentYTM = quote?.bid_yield_to_maturity || latestHistoricalPrice?.yield_to_maturity || (bond.ytm ? parseFloat(bond.ytm) : null);
+  const currentYTW = quote?.bid_yield_to_worst || latestHistoricalPrice?.yield_to_worst || (bond.ytw ? parseFloat(bond.ytw) : null);
 
   // Reset form when modal opens
   useEffect(() => {
@@ -84,14 +100,14 @@ export function OrderModal({ isOpen, onClose, bond, action }: OrderModalProps) {
 
       onClose();
     } catch (error) {
-      console.error('Order submission failed:', error);
+      // Order submission failed
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const estimatedPrice = orderType === 'market' 
-    ? (action === 'buy' ? quote?.ask_price : quote?.bid_price) || parseFloat(bond.lastPrice || '0')
+    ? (action === 'buy' ? currentAsk : currentBid) || latestHistoricalPrice?.price || parseFloat(bond.lastPrice || '0')
     : parseFloat(limitPrice || '0');
 
   const estimatedValue = estimatedPrice * parseFloat(quantity || '0');
@@ -184,42 +200,51 @@ export function OrderModal({ isOpen, onClose, bond, action }: OrderModalProps) {
           )}
 
           {/* Market Data */}
-          {quote && (
-            <Card className="bg-dark-elevated border-dark-border">
-              <CardContent className="p-4">
-                <div className="flex items-center mb-3">
-                  <Clock className="h-4 w-4 text-cyber-blue mr-2" />
-                  <span className="text-sm font-medium">Current Market</span>
+          <Card className="bg-dark-elevated border-dark-border">
+            <CardContent className="p-4">
+              <div className="flex items-center mb-3">
+                <Clock className="h-4 w-4 text-cyber-blue mr-2" />
+                <span className="text-sm font-medium">Current Market</span>
+                {latestHistoricalPrice && !quote?.bid_price && (
+                  <Badge variant="outline" className="ml-2 text-xs">Historical</Badge>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-gray-400">Bid: </span>
+                  <span className="text-cyber-green font-mono">
+                    {currentBid ? `$${currentBid.toFixed(4)}` : 'N/A'}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-gray-400">Bid: </span>
-                    <span className="text-cyber-green font-mono">
-                      {quote.bid_price?.toFixed(2) || 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">Ask: </span>
-                    <span className="text-cyber-red font-mono">
-                      {quote.ask_price?.toFixed(2) || 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">YTM: </span>
-                    <span className="text-cyber-blue font-mono">
-                      {quote.ytm?.toFixed(3)}%
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-gray-400">YTW: </span>
-                    <span className="text-cyber-amber font-mono">
-                      {quote.ytw?.toFixed(3)}%
-                    </span>
+                <div>
+                  <span className="text-gray-400">Ask: </span>
+                  <span className="text-cyber-red font-mono">
+                    {currentAsk ? `$${currentAsk.toFixed(4)}` : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">YTM: </span>
+                  <span className="text-cyber-blue font-mono">
+                    {currentYTM ? `${currentYTM.toFixed(3)}%` : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">YTW: </span>
+                  <span className="text-cyber-amber font-mono">
+                    {currentYTW ? `${currentYTW.toFixed(3)}%` : 'N/A'}
+                  </span>
+                </div>
+              </div>
+              
+              {latestHistoricalPrice && (
+                <div className="mt-3 pt-3 border-t border-dark-border">
+                  <div className="text-xs text-gray-400">
+                    Latest data from: {new Date(latestHistoricalPrice.timestamp).toLocaleDateString()}
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
+            </CardContent>
+          </Card>
 
           {/* Order Summary */}
           {quantity && estimatedPrice > 0 && (

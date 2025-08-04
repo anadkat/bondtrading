@@ -2,15 +2,12 @@ import { cn } from "@/lib/utils";
 import { 
   BarChart3, 
   Search, 
-  Briefcase, 
-  ListChecks, 
-  TrendingUp, 
-  Calculator,
+  ListChecks,
   Wifi,
   WifiOff
 } from "lucide-react";
 
-type Section = 'dashboard' | 'screener' | 'portfolio' | 'orders' | 'market' | 'analytics';
+type Section = 'screener' | 'orders';
 
 interface SidebarProps {
   activeSection: Section;
@@ -26,12 +23,8 @@ export function Sidebar({
   onCollapsedChange 
 }: SidebarProps) {
   const navItems = [
-    { id: 'dashboard' as Section, label: 'Command Center', icon: BarChart3 },
     { id: 'screener' as Section, label: 'Bond Screener', icon: Search },
-    { id: 'portfolio' as Section, label: 'Portfolio', icon: Briefcase },
     { id: 'orders' as Section, label: 'Order Management', icon: ListChecks },
-    { id: 'market' as Section, label: 'Market Data', icon: TrendingUp },
-    { id: 'analytics' as Section, label: 'Analytics', icon: Calculator },
   ];
 
   return (
@@ -52,23 +45,6 @@ export function Sidebar({
             </div>
           )}
         </div>
-        
-        {/* System Status */}
-        {!collapsed && (
-          <div className="mt-4 p-3 bg-dark-elevated rounded-lg">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-gray-400">SYSTEM STATUS</span>
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-cyber-green rounded-full status-indicator mr-2"></div>
-                <span className="text-xs text-cyber-green">ONLINE</span>
-              </div>
-            </div>
-            <div className="text-xs text-gray-300">
-              <div>Uptime: 99.97%</div>
-              <div>Market Data: <span className="text-cyber-green">LIVE</span></div>
-            </div>
-          </div>
-        )}
       </div>
       
       {/* Navigation */}

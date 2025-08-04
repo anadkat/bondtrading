@@ -39,7 +39,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
       wsRef.current = ws;
 
       ws.onopen = () => {
-        console.log('WebSocket connected');
         setIsConnected(true);
         onOpen?.();
         
@@ -56,12 +55,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
           setLastMessage(message);
           onMessage?.(message);
         } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
+          // Error parsing WebSocket message
         }
       };
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected');
         setIsConnected(false);
         wsRef.current = null;
         onClose?.();
@@ -69,19 +67,16 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
         // Auto-reconnect if enabled and should reconnect
         if (autoReconnect && shouldReconnectRef.current) {
           reconnectTimeoutRef.current = setTimeout(() => {
-            console.log('Attempting to reconnect WebSocket...');
             connect();
           }, reconnectInterval);
         }
       };
 
       ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
         onError?.(error);
       };
 
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error);
     }
   };
 
@@ -102,7 +97,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket is not connected. Message not sent:', message);
     }
   };
 

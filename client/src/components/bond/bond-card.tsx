@@ -4,24 +4,20 @@ import { Badge } from "@/components/ui/badge";
 import { 
   TrendingUp, 
   TrendingDown, 
-  Star, 
-  StarOff,
   Info,
   Calendar,
   DollarSign
 } from "lucide-react";
-import { useAddToWatchlist, useRemoveFromWatchlist } from "@/hooks/use-moment-api";
-import type { BondWithMarketData } from "@shared/schema";
+import type { BondWithMarketData } from "@/types/bond";
 
 interface BondCardProps {
   bond: BondWithMarketData;
   onBuy: () => void;
   onSell: () => void;
+  onViewDetails: () => void;
 }
 
-export function BondCard({ bond, onBuy, onSell }: BondCardProps) {
-  const addToWatchlist = useAddToWatchlist();
-  const removeFromWatchlist = useRemoveFromWatchlist();
+export function BondCard({ bond, onBuy, onSell, onViewDetails }: BondCardProps) {
 
   const getRatingColor = (rating?: string | null) => {
     if (!rating) return "bg-gray-500";
@@ -46,13 +42,6 @@ export function BondCard({ bond, onBuy, onSell }: BondCardProps) {
     return new Date(date).toLocaleDateString();
   };
 
-  const handleWatchlistToggle = () => {
-    if (bond.isWatched) {
-      removeFromWatchlist.mutate(bond.id);
-    } else {
-      addToWatchlist.mutate(bond.id);
-    }
-  };
 
   const lastPrice = parseFloat(bond.lastPrice || "0");
   const priceChange = 0; // Would calculate from historical data
@@ -67,30 +56,23 @@ export function BondCard({ bond, onBuy, onSell }: BondCardProps) {
               <h3 className="font-semibold text-white group-hover:text-cyber-blue transition-colors">
                 {bond.issuer}
               </h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={handleWatchlistToggle}
-              >
-                {bond.isWatched ? (
-                  <Star className="h-4 w-4 text-cyber-amber fill-current" />
-                ) : (
-                  <StarOff className="h-4 w-4 text-gray-400" />
-                )}
-              </Button>
             </div>
             <p className="text-sm text-gray-400 mb-2">{bond.description}</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge 
                 variant="secondary" 
                 className={`text-xs ${getRatingColor(bond.rating)} text-white border-none`}
               >
                 {bond.rating || "NR"}
               </Badge>
-              <Badge variant="outline" className="text-xs border-gray-600">
+              <Badge variant="outline" className="text-xs border-gray-600 capitalize">
                 {bond.bondType}
               </Badge>
+              {bond.sector && (
+                <Badge variant="outline" className="text-xs border-cyber-blue/30 text-cyber-blue">
+                  {bond.sector.toLowerCase().replace(/_/g, ' ')}
+                </Badge>
+              )}
             </div>
           </div>
         </div>
@@ -114,21 +96,19 @@ export function BondCard({ bond, onBuy, onSell }: BondCardProps) {
           <div>
             <p className="text-xs text-gray-400 mb-1">YTM</p>
             <p className="text-sm font-mono text-cyber-blue">
-              {formatPercentage(bond.ytm)}
+              {bond.ytm ? formatPercentage(bond.ytm) : (
+                <span className="text-gray-400 text-xs">View Details</span>
+              )}
             </p>
           </div>
           <div>
             <p className="text-xs text-gray-400 mb-1">Price</p>
             <div className="flex items-center gap-1">
               <p className="text-sm font-mono text-white">
-                {lastPrice > 0 ? lastPrice.toFixed(2) : "N/A"}
+                {lastPrice > 0 ? lastPrice.toFixed(2) : (
+                  <span className="text-gray-400 text-xs">View Details</span>
+                )}
               </p>
-              {priceChange !== 0 && (
-                <div className={`flex items-center text-xs ${isPositiveChange ? 'text-cyber-green' : 'text-cyber-red'}`}>
-                  {isPositiveChange ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                  {Math.abs(priceChange).toFixed(2)}
-                </div>
-              )}
             </div>
           </div>
         </div>
@@ -180,9 +160,12 @@ export function BondCard({ bond, onBuy, onSell }: BondCardProps) {
           <Button
             size="sm"
             variant="outline"
+            onClick={onViewDetails}
             className="border-cyber-blue/50 text-cyber-blue hover:bg-cyber-blue/10"
+            title="View live pricing, yields, and historical data"
           >
-            <Info className="h-4 w-4" />
+            <Info className="h-4 w-4 mr-1" />
+            <span className="text-xs">Details</span>
           </Button>
         </div>
       </CardContent>

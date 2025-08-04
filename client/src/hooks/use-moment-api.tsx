@@ -37,49 +37,25 @@ export function useBondQuote(id: string, quantity?: number) {
   });
 }
 
-export function usePriceChart(id: string, params?: {
-  start_date?: string;
-  end_date?: string;
-  granularity?: string;
-}) {
+export function useBondHistoricalPrices(id: string, startDate: string, endDate: string, frequency: string = '1day') {
   return useQuery({
-    queryKey: ['/api/bonds', id, 'price-chart', params],
-    queryFn: () => momentApi.getPriceChart(id, params),
+    queryKey: ['/api/bonds', id, 'prices', startDate, endDate, frequency],
+    queryFn: () => momentApi.getBondHistoricalPrices(id, startDate, endDate, frequency),
+    enabled: !!id && !!startDate && !!endDate,
+    staleTime: 60000, // 1 minute - historical data doesn't change frequently
+  });
+}
+
+export function useBondOrderBook(id: string) {
+  return useQuery({
+    queryKey: ['/api/bonds', id, 'order-book'],
+    queryFn: () => momentApi.getBondOrderBook(id),
     enabled: !!id,
+    refetchInterval: 5000, // Refresh every 5 seconds for order book updates
   });
 }
 
-// Portfolio hooks
-export function usePortfolio() {
-  return useQuery({
-    queryKey: ['/api/portfolio'],
-    queryFn: () => momentApi.getPortfolio(),
-    refetchInterval: 30000, // Refresh every 30 seconds
-  });
-}
 
-export function useAddToPortfolio() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: momentApi.addToPortfolio,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
-      toast({
-        title: "Success",
-        description: "Bond added to portfolio",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
 
 // Order hooks
 export function useOrders(status?: string) {
@@ -114,82 +90,7 @@ export function useSubmitOrder() {
   });
 }
 
-export function useCancelOrder() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: momentApi.cancelOrder,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      toast({
-        title: "Success",
-        description: "Order canceled successfully",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-// Watchlist hooks
-export function useWatchlist() {
-  return useQuery({
-    queryKey: ['/api/watchlist'],
-    queryFn: () => momentApi.getWatchlist(),
-  });
-}
-
-export function useAddToWatchlist() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: momentApi.addToWatchlist,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
-      toast({
-        title: "Success",
-        description: "Added to watchlist",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
-
-export function useRemoveFromWatchlist() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation({
-    mutationFn: momentApi.removeFromWatchlist,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
-      toast({
-        title: "Success",
-        description: "Removed from watchlist",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-}
 
 // System operations
 export function useSyncBonds() {
@@ -202,7 +103,7 @@ export function useSyncBonds() {
       queryClient.invalidateQueries({ queryKey: ['/api/bonds'] });
       toast({
         title: "Sync Complete",
-        description: `Synced ${data.syncedCount} new bonds from Moment API`,
+        description: `Synced ${data.synced_count} new bonds from Moment API`,
       });
     },
     onError: (error: Error) => {

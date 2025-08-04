@@ -1,11 +1,17 @@
 import { queryClient } from "./queryClient";
 
+// Use Python backend on port 8000
+const API_BASE_URL = "http://localhost:8000";
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown
 ): Promise<Response> {
-  const res = await fetch(url, {
+  // Add base URL if it's a relative path
+  const fullUrl = url.startsWith('/') ? `${API_BASE_URL}${url}` : url;
+  
+  const res = await fetch(fullUrl, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -55,7 +61,7 @@ export const momentApi = {
   }) {
     const params = new URLSearchParams();
     Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== '' && value !== 'all' && value !== 0) {
         params.append(key, value.toString());
       }
     });
@@ -71,34 +77,20 @@ export const momentApi = {
     return apiGet(`/api/bonds/${id}/quote${params}`);
   },
 
-  async getPriceChart(id: string, params?: {
-    start_date?: string;
-    end_date?: string;
-    granularity?: string;
-  }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value) searchParams.append(key, value);
-      });
-    }
-    return apiGet(`/api/bonds/${id}/price-chart?${searchParams.toString()}`);
+  async getBondHistoricalPrices(id: string, startDate: string, endDate: string, frequency: string = '1day') {
+    const params = new URLSearchParams({
+      start: startDate,
+      end: endDate,
+      frequency: frequency
+    });
+    return apiGet(`/api/bonds/${id}/prices?${params.toString()}`);
   },
 
-  // Portfolio operations
-  async getPortfolio() {
-    return apiGet('/api/portfolio');
+  async getBondOrderBook(id: string) {
+    return apiGet(`/api/bonds/${id}/order-book`);
   },
 
-  async addToPortfolio(holding: {
-    bondId: string;
-    quantity: string;
-    costBasis: string;
-  }) {
-    const response = await apiPost('/api/portfolio', holding);
-    queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
-    return response;
-  },
+
 
   // Order operations
   async getOrders(status?: string) {
@@ -113,34 +105,21 @@ export const momentApi = {
     quantity: string;
     limitPrice?: string;
   }) {
-    const response = await apiPost('/api/orders', order);
+    // Transform frontend data to match Python backend schema
+    const backendOrder = {
+      instrument_id: order.bondId,
+      side: order.side,
+      order_type: order.orderType,
+      quantity: parseInt(order.quantity) || 1000,
+      price: order.limitPrice ? parseFloat(order.limitPrice) : null,
+      client_order_id: `client_${Date.now()}`
+    };
+
+    const response = await apiPost('/api/orders', backendOrder);
     queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/portfolio'] });
     return response;
   },
 
-  async cancelOrder(orderId: string) {
-    const response = await apiPost(`/api/orders/${orderId}/cancel`);
-    queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-    return response;
-  },
-
-  // Watchlist operations
-  async getWatchlist() {
-    return apiGet('/api/watchlist');
-  },
-
-  async addToWatchlist(bondId: string) {
-    const response = await apiPost('/api/watchlist', { bondId });
-    queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
-    return response;
-  },
-
-  async removeFromWatchlist(bondId: string) {
-    const response = await apiDelete(`/api/watchlist/${bondId}`);
-    queryClient.invalidateQueries({ queryKey: ['/api/watchlist'] });
-    return response;
-  },
 
   // System operations
   async syncBonds() {

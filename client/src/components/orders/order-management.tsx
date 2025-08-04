@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useOrders, useCancelOrder } from "@/hooks/use-moment-api";
+import { useOrders, useBond } from "@/hooks/use-moment-api";
 import { 
   Clock, 
   CheckCircle, 
@@ -20,7 +20,6 @@ import {
 export function OrderManagement() {
   const { data: allOrders = [] } = useOrders();
   const { data: activeOrders = [] } = useOrders('pending');
-  const cancelOrder = useCancelOrder();
 
   const [selectedTab, setSelectedTab] = useState('active');
 
@@ -34,11 +33,6 @@ export function OrderManagement() {
       .reduce((sum, order) => sum + parseFloat(order.quantity || '0'), 0)
   };
 
-  const handleCancelOrder = async (orderId: string) => {
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      await cancelOrder.mutateAsync(orderId);
-    }
-  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -153,8 +147,6 @@ export function OrderManagement() {
             <TabsContent value="active" className="mt-0">
               <OrderTable 
                 orders={allOrders.filter(order => order.status === 'pending' || order.status === 'working')}
-                showActions={true}
-                onCancelOrder={handleCancelOrder}
                 getStatusBadge={getStatusBadge}
                 getSideIcon={getSideIcon}
               />
@@ -163,8 +155,6 @@ export function OrderManagement() {
             <TabsContent value="filled" className="mt-0">
               <OrderTable 
                 orders={allOrders.filter(order => order.status === 'filled')}
-                showActions={false}
-                onCancelOrder={handleCancelOrder}
                 getStatusBadge={getStatusBadge}
                 getSideIcon={getSideIcon}
               />
@@ -173,8 +163,6 @@ export function OrderManagement() {
             <TabsContent value="history" className="mt-0">
               <OrderTable 
                 orders={allOrders}
-                showActions={false}
-                onCancelOrder={handleCancelOrder}
                 getStatusBadge={getStatusBadge}
                 getSideIcon={getSideIcon}
               />
@@ -188,13 +176,11 @@ export function OrderManagement() {
 
 interface OrderTableProps {
   orders: any[];
-  showActions: boolean;
-  onCancelOrder: (orderId: string) => void;
   getStatusBadge: (status: string) => JSX.Element;
   getSideIcon: (side: string) => JSX.Element;
 }
 
-function OrderTable({ orders, showActions, onCancelOrder, getStatusBadge, getSideIcon }: OrderTableProps) {
+function OrderTable({ orders, getStatusBadge, getSideIcon }: OrderTableProps) {
   if (orders.length === 0) {
     return (
       <div className="text-center py-16">
@@ -231,11 +217,6 @@ function OrderTable({ orders, showActions, onCancelOrder, getStatusBadge, getSid
             <th className="text-left py-3 px-6 text-xs font-medium text-gray-400 uppercase tracking-wider">
               Time
             </th>
-            {showActions && (
-              <th className="text-left py-3 px-6 text-xs font-medium text-gray-400 uppercase tracking-wider">
-                Actions
-              </th>
-            )}
           </tr>
         </thead>
         <tbody className="divide-y divide-dark-border">
@@ -243,26 +224,19 @@ function OrderTable({ orders, showActions, onCancelOrder, getStatusBadge, getSid
             <tr key={order.id} className="hover:bg-dark-elevated transition-colors">
               <td className="py-4 px-6">
                 <div className="text-sm font-mono text-cyber-blue">
-                  #{order.id.slice(-8).toUpperCase()}
+                  #{order.id}
                 </div>
               </td>
               <td className="py-4 px-6">
-                <div>
-                  <div className="text-sm font-medium text-white">
-                    {order.bond?.issuer || `Bond ${index + 1}`}
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    {order.bond?.description || order.bond?.isin || 'Bond Security'}
-                  </div>
-                </div>
+                <BondInfo bondId={order.bond_id} />
               </td>
               <td className="py-4 px-6">
                 <div className="flex items-center space-x-2">
-                  {getSideIcon(order.side)}
+                  {getSideIcon(order.action)}
                   <span className={`text-sm font-medium ${
-                    order.side === 'buy' ? 'text-cyber-green' : 'text-cyber-red'
+                    order.action === 'buy' ? 'text-cyber-green' : 'text-cyber-red'
                   }`}>
-                    {order.side.toUpperCase()}
+                    {order.action?.toUpperCase() || 'UNKNOWN'}
                   </span>
                 </div>
               </td>
@@ -273,8 +247,8 @@ function OrderTable({ orders, showActions, onCancelOrder, getStatusBadge, getSid
               </td>
               <td className="py-4 px-6">
                 <div className="text-sm font-mono text-gray-300">
-                  {order.orderType === 'market' ? 'Market' : 
-                   order.limitPrice ? parseFloat(order.limitPrice).toFixed(2) : 'N/A'}
+                  {order.order_type === 'market' ? 'Market Price' : 
+                   order.price ? `$${parseFloat(order.price).toFixed(2)}` : 'N/A'}
                 </div>
               </td>
               <td className="py-4 px-6">
@@ -282,40 +256,52 @@ function OrderTable({ orders, showActions, onCancelOrder, getStatusBadge, getSid
               </td>
               <td className="py-4 px-6">
                 <div className="text-sm text-gray-300">
-                  {new Date(order.createdAt).toLocaleTimeString([], { 
+                  {new Date(order.created_at).toLocaleTimeString([], { 
                     hour: '2-digit', 
                     minute: '2-digit' 
                   })}
                 </div>
                 <div className="text-xs text-gray-400">
-                  {new Date(order.createdAt).toLocaleDateString()}
+                  {new Date(order.created_at).toLocaleDateString()}
                 </div>
               </td>
-              {showActions && (
-                <td className="py-4 px-6">
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onCancelOrder(order.id)}
-                      className="border-cyber-red/50 text-cyber-red hover:bg-cyber-red/10"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-cyber-blue/50 text-cyber-blue hover:bg-cyber-blue/10"
-                    >
-                      Modify
-                    </Button>
-                  </div>
-                </td>
-              )}
             </tr>
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function BondInfo({ bondId }: { bondId: string }) {
+  const { data: bond, isLoading } = useBond(bondId);
+  
+  if (isLoading) {
+    return (
+      <div>
+        <div className="text-sm font-medium text-white">Loading...</div>
+        <div className="text-sm text-gray-400">{bondId}</div>
+      </div>
+    );
+  }
+  
+  if (!bond) {
+    return (
+      <div>
+        <div className="text-sm font-medium text-white">{bondId}</div>
+        <div className="text-sm text-gray-400">Bond details unavailable</div>
+      </div>
+    );
+  }
+  
+  return (
+    <div>
+      <div className="text-sm font-medium text-white">
+        {bond.issuer}
+      </div>
+      <div className="text-sm text-gray-400">
+        {bond.description || bond.isin}
+      </div>
     </div>
   );
 }

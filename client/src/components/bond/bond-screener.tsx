@@ -7,9 +7,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { BondCard } from "./bond-card";
 import { OrderModal } from "./order-modal";
+import { BondDetailsModal } from "./bond-details-modal";
 import { useBonds } from "@/hooks/use-moment-api";
 import { Search, Download, Filter, TrendingUp, TrendingDown } from "lucide-react";
-import type { BondWithMarketData } from "@shared/schema";
+import type { BondWithMarketData } from "@/types/bond";
 
 export function BondScreener() {
   const [filters, setFilters] = useState({
@@ -27,6 +28,8 @@ export function BondScreener() {
   const [selectedBond, setSelectedBond] = useState<BondWithMarketData | null>(null);
   const [orderModalOpen, setOrderModalOpen] = useState(false);
   const [orderAction, setOrderAction] = useState<'buy' | 'sell'>('buy');
+  const [detailsModalOpen, setDetailsModalOpen] = useState(false);
+  const [selectedBondId, setSelectedBondId] = useState<string | null>(null);
 
   const { data: bonds = [], isLoading, error } = useBonds(filters);
 
@@ -55,6 +58,11 @@ export function BondScreener() {
     setSelectedBond(bond);
     setOrderAction(action);
     setOrderModalOpen(true);
+  };
+
+  const openDetailsModal = (bond: BondWithMarketData) => {
+    setSelectedBondId(bond.id);
+    setDetailsModalOpen(true);
   };
 
   if (error) {
@@ -114,11 +122,22 @@ export function BondScreener() {
                 <SelectContent>
                   <SelectItem value="all">All Ratings</SelectItem>
                   <SelectItem value="AAA">AAA</SelectItem>
+                  <SelectItem value="AA+">AA+</SelectItem>
                   <SelectItem value="AA">AA</SelectItem>
+                  <SelectItem value="AA-">AA-</SelectItem>
+                  <SelectItem value="A+">A+</SelectItem>
                   <SelectItem value="A">A</SelectItem>
+                  <SelectItem value="A-">A-</SelectItem>
+                  <SelectItem value="BBB+">BBB+</SelectItem>
                   <SelectItem value="BBB">BBB</SelectItem>
+                  <SelectItem value="BBB-">BBB-</SelectItem>
+                  <SelectItem value="BB+">BB+</SelectItem>
                   <SelectItem value="BB">BB</SelectItem>
+                  <SelectItem value="BB-">BB-</SelectItem>
+                  <SelectItem value="B+">B+</SelectItem>
                   <SelectItem value="B">B</SelectItem>
+                  <SelectItem value="B-">B-</SelectItem>
+                  <SelectItem value="NR">Not Rated</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -176,11 +195,15 @@ export function BondScreener() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Sectors</SelectItem>
-                  <SelectItem value="technology">Technology</SelectItem>
-                  <SelectItem value="financial">Financial</SelectItem>
-                  <SelectItem value="healthcare">Healthcare</SelectItem>
-                  <SelectItem value="energy">Energy</SelectItem>
-                  <SelectItem value="utilities">Utilities</SelectItem>
+                  <SelectItem value="FINANCIAL SERVICES">Financial Services</SelectItem>
+                  <SelectItem value="TECHNOLOGY MEDIA AND TELECOMMUNICATIONS">Technology & Telecom</SelectItem>
+                  <SelectItem value="ENERGY">Energy</SelectItem>
+                  <SelectItem value="HEALTHCARE">Healthcare</SelectItem>
+                  <SelectItem value="INDUSTRIALS">Industrials</SelectItem>
+                  <SelectItem value="CONSUMER">Consumer</SelectItem>
+                  <SelectItem value="TELECOMMUNICATIONS">Telecommunications</SelectItem>
+                  <SelectItem value="TRANSPORTATION AND LOGISTICS">Transportation</SelectItem>
+                  <SelectItem value="SOVEREIGN">Government/Sovereign</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -251,7 +274,7 @@ export function BondScreener() {
               </div>
             </div>
           ) : (
-            <div className="h-full overflow-y-auto scrollbar-custom p-6">
+            <div className="overflow-y-auto scrollbar-custom p-6 max-h-[calc(100vh-20rem)]">
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 {Array.isArray(bonds) && bonds.map((bond: BondWithMarketData) => (
                   <BondCard
@@ -259,6 +282,7 @@ export function BondScreener() {
                     bond={bond}
                     onBuy={() => openOrderModal(bond, 'buy')}
                     onSell={() => openOrderModal(bond, 'sell')}
+                    onViewDetails={() => openDetailsModal(bond)}
                   />
                 ))}
               </div>
@@ -276,6 +300,13 @@ export function BondScreener() {
           action={orderAction}
         />
       )}
+
+      {/* Bond Details Modal */}
+      <BondDetailsModal
+        bondId={selectedBondId}
+        isOpen={detailsModalOpen}
+        onClose={() => setDetailsModalOpen(false)}
+      />
     </div>
   );
 }
