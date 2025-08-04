@@ -286,7 +286,13 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                       <div>
                         <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
                           <DollarSign className="h-4 w-4 mr-2" />
-                          Available Pricing Data
+                          Market Pricing Data
+                          {quote?.status === 'estimated' && (
+                            <Badge variant="outline" className="ml-2 text-xs border-cyber-amber text-cyber-amber">Estimated</Badge>
+                          )}
+                          {quote?.status === 'no_data_available' && (
+                            <Badge variant="outline" className="ml-2 text-xs border-gray-500 text-gray-400">No Data</Badge>
+                          )}
                         </h4>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="p-3 bg-dark-elevated rounded-lg">
@@ -301,7 +307,9 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                               )}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {quote?.bid_size ? `Size: ${quote.bid_size.toLocaleString()}` : 'Last known price'}
+                              {quote?.bid_size ? `Size: ${quote.bid_size.toLocaleString()}` : 
+                               quote?.status === 'estimated' ? 'Estimated from bond data' :
+                               quote?.status === 'no_data_available' ? 'No quote data' : 'Last known price'}
                             </p>
                           </div>
                           <div className="p-3 bg-dark-elevated rounded-lg">
@@ -316,7 +324,9 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                               )}
                             </p>
                             <p className="text-xs text-gray-400">
-                              {quote?.ask_size ? `Size: ${quote.ask_size.toLocaleString()}` : 'No quote available'}
+                              {quote?.ask_size ? `Size: ${quote.ask_size.toLocaleString()}` : 
+                               quote?.status === 'estimated' ? 'Estimated from bond data' :
+                               quote?.status === 'no_data_available' ? 'No quote data' : 'No quote available'}
                             </p>
                           </div>
                         </div>
@@ -375,8 +385,9 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                           <div>
                             <h5 className="text-sm font-medium text-cyber-amber mb-1">Paper API Environment</h5>
                             <p className="text-xs text-gray-400">
-                              This demo uses Moment's Paper API environment. Quote and order book data may be limited or simulated. 
-                              In production, this would show live market data and active order books.
+                              This demo uses Moment's Paper API environment. When live quotes aren't available, 
+                              we generate estimated bid/ask spreads from bond data to demonstrate the interface. 
+                              Production environments would show real-time market data.
                             </p>
                           </div>
                         </div>
