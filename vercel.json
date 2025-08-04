@@ -1,17 +1,11 @@
 {
-  "builds": [
-    {
-      "src": "client/package.json",
-      "use": "@vercel/static-build",
-      "config": { 
-        "distDir": "../dist/public"
-      }
-    },
-    {
-      "src": "python-backend/app/main.py",
-      "use": "@vercel/python"
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
+  "functions": {
+    "python-backend/app/main.py": {
+      "runtime": "@vercel/python"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
@@ -19,10 +13,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/client/$1"
+      "dest": "/$1"
     }
-  ],
-  "env": {
-    "PYTHONPATH": "python-backend"
-  }
+  ]
 }
