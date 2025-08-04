@@ -3,7 +3,6 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { TopBar } from "@/components/layout/topbar";
 import { BondScreener } from "@/components/bond/bond-screener";
 import { OrderManagement } from "@/components/orders/order-management";
-import { useSyncBonds } from "@/hooks/use-moment-api";
 import { useWebSocket } from "@/hooks/use-websocket";
 
 type Section = 'screener' | 'orders';
@@ -12,7 +11,6 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState<Section>('screener');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const syncBonds = useSyncBonds();
 
   // WebSocket for real-time updates
   useWebSocket({
@@ -53,8 +51,8 @@ export default function Dashboard() {
         <TopBar
           title={sectionTitles[activeSection]}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-          onSyncBonds={() => syncBonds.mutate()}
-          isSyncing={syncBonds.isPending}
+          onSyncBonds={() => {}} 
+          isSyncing={false}
         />
         
         <main className="flex-1 overflow-hidden p-6">

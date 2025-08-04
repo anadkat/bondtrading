@@ -73,6 +73,15 @@ export const momentApi = {
     return apiGet(`/api/bonds/${id}`);
   },
 
+  async getBondQuote(id: string, quantity?: number) {
+    const params = quantity ? `?quantity=${quantity}` : '';
+    return apiGet(`/api/bonds/${id}/quote${params}`);
+  },
+
+  async getBondOrderBook(id: string) {
+    return apiGet(`/api/bonds/${id}/order-book`);
+  },
+
 
 
 

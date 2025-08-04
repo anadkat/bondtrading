@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useBond } from "@/hooks/use-moment-api";
+import { useBond, useBondQuote, useBondOrderBook } from "@/hooks/use-moment-api";
 import { 
   Building, 
   Calendar, 
@@ -31,6 +31,8 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
   const [orderAction, setOrderAction] = useState<'buy' | 'sell'>('buy');
 
   const { data: bond, isLoading: bondLoading } = useBond(bondId || '');
+  const { data: quote, isLoading: quoteLoading } = useBondQuote(bondId || '');
+  const { data: orderBook, isLoading: orderBookLoading } = useBondOrderBook(bondId || '');
 
   if (!bondId) return null;
 
@@ -277,37 +279,82 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                         </h4>
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Last Price</p>
+                            <p className="text-gray-400 text-sm mb-1">Best Bid</p>
                             <p className="text-xl font-mono text-cyber-green">
-                              {bond?.lastPrice ? formatCurrency(bond.lastPrice) : 'N/A'}
+                              {quoteLoading ? (
+                                <span className="text-sm">Loading...</span>
+                              ) : quote?.bid_price ? (
+                                formatCurrency(quote.bid_price.toString())
+                              ) : (
+                                bond?.lastPrice ? formatCurrency(bond.lastPrice) : 'N/A'
+                              )}
                             </p>
-                            <p className="text-xs text-gray-400">Last known price</p>
+                            <p className="text-xs text-gray-400">
+                              {quote?.bid_size ? `Size: ${quote.bid_size.toLocaleString()}` : 'Last known price'}
+                            </p>
                           </div>
                           <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Yield to Worst</p>
-                            <p className="text-xl font-mono text-cyber-blue">
-                              {bond?.ytw ? formatPercentage(bond.ytw) : 'N/A'}
+                            <p className="text-gray-400 text-sm mb-1">Best Ask</p>
+                            <p className="text-xl font-mono text-cyber-red">
+                              {quoteLoading ? (
+                                <span className="text-sm">Loading...</span>
+                              ) : quote?.ask_price ? (
+                                formatCurrency(quote.ask_price.toString())
+                              ) : (
+                                'N/A'
+                              )}
                             </p>
-                            <p className="text-xs text-gray-400">YTW</p>
+                            <p className="text-xs text-gray-400">
+                              {quote?.ask_size ? `Size: ${quote.ask_size.toLocaleString()}` : 'No quote available'}
+                            </p>
                           </div>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4 mb-4">
                           <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Yield to Maturity</p>
-                            <p className="text-xl font-mono text-cyber-amber">
-                              {bond?.ytm ? formatPercentage(bond.ytm) : 'N/A'}
+                            <p className="text-gray-400 text-sm mb-1">Bid Yield (YTM)</p>
+                            <p className="text-xl font-mono text-cyber-blue">
+                              {quote?.bid_yield_to_maturity ? 
+                                formatPercentage(quote.bid_yield_to_maturity.toString()) : 
+                                (bond?.ytm ? formatPercentage(bond.ytm) : 'N/A')
+                              }
                             </p>
-                            <p className="text-xs text-gray-400">YTM</p>
+                            <p className="text-xs text-gray-400">Yield to Maturity</p>
                           </div>
                           <div className="p-3 bg-dark-elevated rounded-lg">
-                            <p className="text-gray-400 text-sm mb-1">Par Value</p>
-                            <p className="text-xl font-mono text-white">
-                              {bond?.parValue ? formatCurrency(bond.parValue) : 'N/A'}
+                            <p className="text-gray-400 text-sm mb-1">Bid Yield (YTW)</p>
+                            <p className="text-xl font-mono text-cyber-amber">
+                              {quote?.bid_yield_to_worst ? 
+                                formatPercentage(quote.bid_yield_to_worst.toString()) : 
+                                (bond?.ytw ? formatPercentage(bond.ytw) : 'N/A')
+                              }
                             </p>
-                            <p className="text-xs text-gray-400">Face value</p>
+                            <p className="text-xs text-gray-400">Yield to Worst</p>
                           </div>
                         </div>
+
+                        {/* Order Book Summary */}
+                        {orderBook && (orderBook.bids?.length > 0 || orderBook.asks?.length > 0) && (
+                          <div className="mt-6">
+                            <h5 className="text-sm font-semibold text-gray-300 mb-3">Order Book Activity</h5>
+                            <div className="grid grid-cols-2 gap-4">
+                              <div className="p-3 bg-dark-elevated rounded-lg border border-cyber-green/20">
+                                <p className="text-gray-400 text-sm mb-1">Total Bids</p>
+                                <p className="text-lg font-mono text-cyber-green">
+                                  {orderBook.bids?.length || 0}
+                                </p>
+                                <p className="text-xs text-gray-400">Active buy orders</p>
+                              </div>
+                              <div className="p-3 bg-dark-elevated rounded-lg border border-cyber-red/20">
+                                <p className="text-gray-400 text-sm mb-1">Total Asks</p>
+                                <p className="text-lg font-mono text-cyber-red">
+                                  {orderBook.asks?.length || 0}
+                                </p>
+                                <p className="text-xs text-gray-400">Active sell orders</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Paper API Notice */}
@@ -317,8 +364,8 @@ export function BondDetailsModal({ bondId, isOpen, onClose }: BondDetailsModalPr
                           <div>
                             <h5 className="text-sm font-medium text-cyber-amber mb-1">Paper API Environment</h5>
                             <p className="text-xs text-gray-400">
-                              Real-time quotes, order books, and historical pricing are not available in the paper environment. 
-                              The data shown is static bond information from the Moment API.
+                              This demo uses Moment's Paper API environment. Quote and order book data may be limited or simulated. 
+                              In production, this would show live market data and active order books.
                             </p>
                           </div>
                         </div>

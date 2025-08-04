@@ -28,6 +28,24 @@ export function useBond(id: string) {
   });
 }
 
+export function useBondQuote(id: string, quantity?: number) {
+  return useQuery({
+    queryKey: ['/api/bonds', id, 'quote', quantity],
+    queryFn: () => momentApi.getBondQuote(id, quantity),
+    enabled: !!id,
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+}
+
+export function useBondOrderBook(id: string) {
+  return useQuery({
+    queryKey: ['/api/bonds', id, 'order-book'],
+    queryFn: () => momentApi.getBondOrderBook(id),
+    enabled: !!id,
+    refetchInterval: 5000, // Refresh every 5 seconds for order book updates
+  });
+}
+
 
 
 // Order hooks

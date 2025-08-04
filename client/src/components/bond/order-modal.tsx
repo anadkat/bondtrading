@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useSubmitOrder, useBondQuote, useBondHistoricalPrices } from "@/hooks/use-moment-api";
+import { useSubmitOrder, useBondQuote } from "@/hooks/use-moment-api";
 import { useToast } from "@/hooks/use-toast";
 import { 
   TrendingUp, 
@@ -33,23 +33,14 @@ export function OrderModal({ isOpen, onClose, bond, action }: OrderModalProps) {
 
   const { toast } = useToast();
   const submitOrder = useSubmitOrder();
-  const { data: quote } = useBondQuote(bond.id, parseInt(quantity) || 1000000);
-  
-  // Get historical pricing as fallback for current market data
-  const endDate = new Date().toISOString().split('T')[0];
-  const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]; // Last 7 days
-  const { data: historicalPrices } = useBondHistoricalPrices(bond.id, startDate, endDate, '1day');
+  const { data: quote, isLoading: quoteLoading } = useBondQuote(bond.id, parseInt(quantity) || 1000000);
 
-  // Get latest market data from historical prices as fallback
-  const latestHistoricalPrice = historicalPrices?.data && historicalPrices.data.length > 0 
-    ? historicalPrices.data[historicalPrices.data.length - 1] 
-    : null;
-
-  // Smart fallback for market data
-  const currentBid = quote?.bid_price || (latestHistoricalPrice?.price ? latestHistoricalPrice.price * 0.999 : null);
-  const currentAsk = quote?.ask_price || (latestHistoricalPrice?.price ? latestHistoricalPrice.price * 1.001 : null);
-  const currentYTM = quote?.bid_yield_to_maturity || latestHistoricalPrice?.yield_to_maturity || (bond.ytm ? parseFloat(bond.ytm) : null);
-  const currentYTW = quote?.bid_yield_to_worst || latestHistoricalPrice?.yield_to_worst || (bond.ytw ? parseFloat(bond.ytw) : null);
+  // Use quote data if available, otherwise fall back to bond data
+  const currentBid = quote?.bid_price;
+  const currentAsk = quote?.ask_price;
+  const currentYTM = quote?.bid_yield_to_maturity || (bond.ytm ? parseFloat(bond.ytm) : null);
+  const currentYTW = quote?.bid_yield_to_worst || (bond.ytw ? parseFloat(bond.ytw) : null);
+  const estimatedPrice = bond.lastPrice ? parseFloat(bond.lastPrice) : 100; // Default to par if no last price
 
   // Reset form when modal opens
   useEffect(() => {
@@ -106,11 +97,11 @@ export function OrderModal({ isOpen, onClose, bond, action }: OrderModalProps) {
     }
   };
 
-  const estimatedPrice = orderType === 'market' 
-    ? (action === 'buy' ? currentAsk : currentBid) || latestHistoricalPrice?.price || parseFloat(bond.lastPrice || '0')
+  const orderEstimatedPrice = orderType === 'market' 
+    ? (action === 'buy' ? currentAsk : currentBid) || estimatedPrice // Use quote prices or fallback
     : parseFloat(limitPrice || '0');
 
-  const estimatedValue = estimatedPrice * parseFloat(quantity || '0');
+  const estimatedValue = orderEstimatedPrice * parseFloat(quantity || '0');
   const accruedInterest = estimatedValue * 0.002; // Simplified calculation
   const commission = Math.max(25, estimatedValue * 0.0001);
   const totalAmount = action === 'buy' 

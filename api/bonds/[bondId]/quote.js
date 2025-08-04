@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const { bondId } = req.query;
+  const { bondId, quantity } = req.query;
 
   if (!bondId) {
     res.status(400).json({ error: 'Bond ID is required' });
@@ -23,9 +23,11 @@ export default async function handler(req, res) {
 
   try {
     const apiKey = 'msk_papr.5dde1e4b.qcUk-rVwMth7b7woezLIk_lAtLwL_Kg0';
-    const url = `https://paper.moment-api.com/v1/trading/quote/${bondId}/`;
+    // Use the top of order book endpoint as suggested
+    const url = `https://paper.moment-api.com/v1/data/top-of-order-book/${bondId}`;
+    const params = quantity ? `?quantity=${quantity}` : '';
     
-    const response = await fetch(url, {
+    const response = await fetch(`${url}${params}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json'
