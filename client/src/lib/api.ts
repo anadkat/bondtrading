@@ -1,9 +1,7 @@
 import { queryClient } from "./queryClient";
 
-// Use Python backend - localhost for dev, relative path for production
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? '' // Use relative paths in production (same domain)
-  : "http://localhost:8000"; // Use localhost in development
+// Use serverless API endpoints
+const API_BASE_URL = '';
 
 
 export async function apiRequest(
@@ -108,17 +106,7 @@ export const momentApi = {
     quantity: string;
     limitPrice?: string;
   }) {
-    // Transform frontend data to match Python backend schema
-    const backendOrder = {
-      instrument_id: order.bondId,
-      side: order.side,
-      order_type: order.orderType,
-      quantity: parseInt(order.quantity) || 1000,
-      price: order.limitPrice ? parseFloat(order.limitPrice) : null,
-      client_order_id: `client_${Date.now()}`
-    };
-
-    const response = await apiPost('/api/orders', backendOrder);
+    const response = await apiPost('/api/orders', order);
     queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     return response;
   },
